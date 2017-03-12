@@ -1,7 +1,7 @@
 import wx
 
 
-class QueryKiezen(wx.Panel):
+class QueryMaken(wx.Panel):
     def __init__(self, parent, id):
         wx.Panel.__init__(self, parent, id)
       	self.declareren()
@@ -34,8 +34,8 @@ if __name__ == "__main__":
     class Schermpje(wx.Frame):
         def __init__(self, parent, id, title):
             wx.Frame.__init__(self, parent, id, title, size=(800, 500))
-            self.paneeltje = QueryKiezen(self, -1)
+            self.paneeltje = QueryMaken(self, -1)
             self.Show(True)
     app = wx.App()
-    Schermpje(None, -1, "Simpel CheckBox")
+    Schermpje(None, -1, "Query Maker")
     app.MainLoop()
