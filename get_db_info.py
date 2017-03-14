@@ -10,6 +10,17 @@ JGI_ORGS = {">asp-ni" : "Aspni7",
             ">pen-br" : "Penbr2",
             ">pha-ch" : "Phchr2"}
 
+JGI_ORGS_NAMES = {">asp-ni" : "Aspergillus niger",
+                  ">het-py" : "Heterogastridium pycnidioideum",
+                  ">pen-bi" : "Penicillium bilaiae",
+                  ">pen-br" : "Penicillium brevicompactum",
+                  ">pha-ch" : "Phanerochaete chrysosporium",
+                  "asp-cl" : "Aspergillus clavatus",
+                  "eme-ni" : "Aspergillus nidulans",
+                  "mag-gr" : "Magnaporthe grisea",
+                  "rhi-so" : "Rhizoctonia solani",
+                  "sac-ce" : "Saccharomyces cerevisea"}
+
 def get_proteomes():
     proteoom_list = {}
     JGI_connect()
@@ -52,6 +63,9 @@ def check_files(orgs):
             files_aanwezig = False
             missing_files.append(x)
     for x in orgs:
+        if not os.path.isfile("prots/{}.fa".format(x)):
+            files_aanwezig = False
+            missing_files.append(file)
         for y in orgs:
             if x != y:
                 file = "blasts/" + x + SEPARATOR + y
@@ -177,11 +191,45 @@ def get_pathway(orgs, proteomes):
     for x in pathway_info:
         pathway_info_file.write(";".join(x) + "\n")
 
+def get_eiwit(orgs):
+    global JGI_ORGS_NAMES
+    cogs = [x[:-1].split("\t") for x in open("cogs.txt", "r").readlines()]
+    db_eiwit = []
+    for org in orgs:
+        print(org)
+        found, cog, database, prot_id = False, "", "", ""
+        if org[0] == ">":
+            prot = [x[:-1] for x in open("prots/{}.fa".format(org[1:]), "r") if x[0] == ">"]
+            database = "JGI"
+        else:
+            prot = [x[:-1] for x in open("prots/{}.fa".format(org), "r") if x[0] == ">"]
+            database = "UNIPROT"
+        for x in prot:
+            for y in cogs:
+                if y[1] in x:
+                    found = True
+                    cog = y[0]
+            if not found:
+                cog = "NULL"
+            found = False
+            if org[0] == ">":
+                prot_id = x.split("|")[2]
+            else:
+                prot_id = x.split("|")[1]
+            db_eiwit.append([prot_id, database, JGI_ORGS_NAMES[org], cog])
+
+    db_eiwit_file = open("db_eiwit", "w")
+    for x in db_eiwit:
+        db_eiwit_file.write(";".join(x) + "\n")
+
+
+def get_blasts:
+
+
 
 
 
 def main():
-    JGI_connect()
     proteomes, orgs = get_proteomes()
     clean_orgs = []
     for x in orgs:
@@ -191,6 +239,7 @@ def main():
             clean_orgs.append(x)
     if check_files(clean_orgs):
         get_pathway(orgs, proteomes)
+        get_eiwit(orgs)
 
 
 main()
