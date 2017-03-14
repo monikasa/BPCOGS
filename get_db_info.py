@@ -4,7 +4,11 @@ import os
 FILES_NEEDED = ["cogs.txt"]
 #separator voor de blast files
 SEPARATOR = "_"
-
+JGI_ORGS = {">asp-ni" : "Aspni7",
+            ">het-py" : "Hetpy1",
+            ">pen-bi" : "Penbi1",
+            ">pen-br" : "Penbr2",
+            ">pha-ch" : "Phchr2"}
 
 def get_proteomes():
     proteoom_list = {}
@@ -104,25 +108,30 @@ def download_JGI_proteome(org):
         path = subdir[0].split("url=\"")[1].split("\"")[0]
         return ("http://genome.jgi.doe.gov" + path)
 
-def get_pathway(orgs):
+def get_pathway(orgs, proteomes):
+    global JGI_ORGS
     pathway_info = []
     pathway_koppel = []
     os.system("curl http://rest.kegg.jp/list/pathway -b cookies > $(pwd)/pathway_ids")
-    pathway_ids = [x.split("\t") for x in open("pathway_ids", "r").readlines()]
+    pathway_ids = [x[:-1].split("\t") for x in open("pathway_ids", "r").readlines()]
     for org in orgs:
+        print(org)
         if org[0] == ">":
             prot_file = [x.split("|")[2] for x in open("prots/{}.fa".format(org[1:]), "r").readlines() if x[0] == ">"]
+            jgi_url = "http://genome.jgi.doe.gov/ext-api/downloads/get-directory?organism={}".format(JGI_ORGS[org])
             os.system(
-                "curl -s 'http://genome.jgi.doe.gov/ext-api/downloads/get-directory?organism=" + org + "' -b cookies > files.xml")
+                "curl -s '{}' -b cookies > files.xml".format(jgi_url))
             file = open("files.xml", "r")
             directory = file.readlines()
             possible_files = []
+            print(jgi_url)
             for dir_file in directory:
+                #print(">{}".format(dir_file))
                 if "KEGG" in dir_file and "tab" in dir_file:
                     possible_files.append(dir_file)
             if len(possible_files) < 1:
                 print("no pathway info found for {}".format(org))
-                break
+                continue
             elif len(possible_files) > 1:
                 print("multiple downloads found for {}\nUsing first file\n files:".format(org))
                 for x in possible_files:
@@ -130,7 +139,7 @@ def get_pathway(orgs):
             path = possible_files[0].split("url=\"")[1].split("\"")[0]
             url = "http://genome.jgi.doe.gov" + path
             os.system("curl {} -b cookies > $(pwd)/{}_pathway.tab.gz".format(url, org[1:]))
-            os.system("gunzip -q {}_pathway.tab.gz".format(org[1:]))
+            os.system("gunzip -q -f {}_pathway.tab.gz".format(org[1:]))
             pathway_file = open("{}_pathway.tab".format(org[1:]), "r").readlines()
             pathway_header = pathway_file.pop(0).split("\t")
             for prot in prot_file:
@@ -141,10 +150,33 @@ def get_pathway(orgs):
                         found = False
                         for x in pathway_ids:
                             if pathway_name == x[1]:
-                                pathway_koppel.append(prot, x[0])
-                                pathway_info.append([x])
-    print(pathway_koppel[1:10])
-    print(list(set(pathway_info))[1:10])
+                                pathway_koppel.append([prot, x[0]])
+                                pathway_info.append(x)
+        else:
+            uniprot_up = proteomes[org].split("proteome:")[1].split("&")[0]
+            print(uniprot_up)
+            url = "http://www.uniprot.org/uniprot/?query=proteome:{}&format=tab&columns=id,pathway".format(uniprot_up)
+            os.system("echo {} > test".format(url))
+            os.system("curl -s \"{}\" -b cookies > {}_pathway.tab".format(url, org))
+            pathway_file = [[x.split("\t")[0]] + x[:-1].split("\t")[1].split(";") for x in open("{}_pathway.tab".format(org), "r").readlines() if len(x[:-1].split(" ")) > 2]
+            for x in pathway_file:
+                for y in pathway_ids:
+                    if x[1] == y[1]:
+                        pathway_koppel.append([x[0], y[0]])
+                        pathway_info.append(y)
+
+
+
+    #print(pathway_koppel[1:10])
+    pathway_info = list(map(list, set(map(tuple, pathway_info))))
+    #print(pathway_info[1:10])
+    pathway_koppel_file = open("db_pathway_koppel", "w")
+    pathway_info_file = open("db_pathway", "w")
+    for x in pathway_koppel:
+        pathway_koppel_file.write(";".join(x) + "\n")
+    for x in pathway_info:
+        pathway_info_file.write(";".join(x) + "\n")
+
 
 
 
@@ -158,7 +190,7 @@ def main():
         else:
             clean_orgs.append(x)
     if check_files(clean_orgs):
-        get_pathway(orgs)
+        get_pathway(orgs, proteomes)
 
 
 main()
