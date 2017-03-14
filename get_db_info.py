@@ -223,12 +223,6 @@ def get_eiwit(orgs):
         db_eiwit_file.write(";".join(x) + "\n")
 
 
-def get_blasts:
-
-
-
-
-
 def main():
     proteomes, orgs = get_proteomes()
     clean_orgs = []
