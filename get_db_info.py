@@ -237,13 +237,15 @@ def get_blasts(orgs):
                     else:
                         temp_blast.append(blast[0].split("|")[1])
                     if blast[1].split("|")[0] == "jgi":
-                        temp_blast.append(blast[0].split("|")[2])
+                        temp_blast.append(blast[1].split("|")[2])
                     else:
-                        temp_blast.append(blast[0].split("|")[1])
+                        temp_blast.append(blast[1].split("|")[1])
                     db_blast.append(temp_blast)
+                    temp_blast = []
     db_blast_file = open("db_blast", "w")
     for x in db_blast:
-        db_blast_file.write(";".join(x) + "\n")
+        line = ";".join(x) + "\n"
+        db_blast_file.write(line)
 
 def main():
     proteomes, orgs = get_proteomes()
@@ -254,8 +256,8 @@ def main():
         else:
             clean_orgs.append(x)
     if check_files(clean_orgs):
-        #get_pathway(orgs, proteomes)
-        #get_eiwit(orgs)
+        get_pathway(orgs, proteomes)
+        get_eiwit(orgs)
         get_blasts(clean_orgs)
 
 
