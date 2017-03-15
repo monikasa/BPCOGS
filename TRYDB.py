@@ -77,8 +77,8 @@ def fill_tables(cursor, conn):
 
     for line in db_eiwit:
         cursor.execute(
-            "INSERT INTO EIWIT VALUES(%s,%s,%s)",
-            (line[0], line[1], line[2]))
+            "INSERT INTO EIWIT VALUES(%s,%s,%s,%s)",
+            (line[0], line[1], line[2], (line[3]) if line[3] != "NULL" else None))
 
     for line in db_blast:
         cursor.execute(
