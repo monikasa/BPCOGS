@@ -195,6 +195,7 @@ def get_eiwit(orgs):
     global JGI_ORGS_NAMES
     cogs = [x[:-1].split("\t") for x in open("cogs.txt", "r").readlines()]
     db_eiwit = []
+    used_ids = []
     for org in orgs:
         print(org)
         found, cog, database, prot_id = False, "", "", ""
@@ -216,7 +217,9 @@ def get_eiwit(orgs):
                 prot_id = x.split("|")[2]
             else:
                 prot_id = x.split("|")[1]
-            db_eiwit.append([prot_id, database, JGI_ORGS_NAMES[org], cog])
+            if prot_id not in used_ids:
+                db_eiwit.append([prot_id, database, JGI_ORGS_NAMES[org], cog])
+                used_ids.append(prot_id)
 
     db_eiwit_file = open("db_eiwit", "w")
     for x in db_eiwit:
@@ -243,6 +246,7 @@ def get_blasts(orgs):
                     db_blast.append(temp_blast)
                     temp_blast = []
     db_blast_file = open("db_blast", "w")
+    db_blast = list(map(list, set(map(tuple, db_blast))))
     for x in db_blast:
         line = ";".join(x) + "\n"
         db_blast_file.write(line)
@@ -256,8 +260,8 @@ def main():
         else:
             clean_orgs.append(x)
     if check_files(clean_orgs):
-        get_pathway(orgs, proteomes)
-        get_eiwit(orgs)
+        #get_pathway(orgs, proteomes)
+        #get_eiwit(orgs)
         get_blasts(clean_orgs)
 
 

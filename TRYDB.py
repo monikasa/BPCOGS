@@ -21,18 +21,18 @@ import psycopg2
 
 
 def connect():
-    conn_string = "host='localhost' dbname='postgres' user='postgres'" \
-                  " password='xaga8ufh137'"
+    conn_string = "host='localhost' dbname='bpcogs' user='sven'" \
+                  " password='bpcogs1617'"
     conn = psycopg2.connect(conn_string)
     cursor = conn.cursor()
 
     return conn, cursor
 
 def drop_db(cursor, conn):
-    cursor.execute("DROP TABLE KOPPEL_PATHWAY")
-    cursor.execute("DROP TABLE BLAST")
-    cursor.execute("DROP TABLE EIWIT")
-    cursor.execute("DROP TABLE PATHWAY")
+    cursor.execute("DROP TABLE IF EXISTS KOPPEL_PATHWAY")
+    cursor.execute("DROP TABLE IF EXISTS BLAST")
+    cursor.execute("DROP TABLE IF EXISTS EIWIT")
+    cursor.execute("DROP TABLE IF EXISTS PATHWAY")
 
     conn.commit()
 
@@ -70,7 +70,7 @@ def make_tables(cursor, conn):
 
 def fill_tables(cursor, conn):
 
-    db_eiwit = [x[:-1].split(";") for x in open("db_eiwit_test", "r").readlines()]
+    db_eiwit = [x[:-1].split(";") for x in open("db_eiwit", "r").readlines()]
     db_blast = [x[:-1].split(";") for x in open("db_blast", "r").readlines()]
     db_pathway = [x[:-1].split(";") for x in open("db_pathway", "r").readlines()]
     db_pathway_koppel = [x[:-1].split(";") for x in open("db_pathway_koppel", "r").readlines()]
@@ -92,7 +92,7 @@ def fill_tables(cursor, conn):
 
     for line in db_pathway_koppel:
         cursor.execute(
-            "INSERT INTO PATHWAY_KOPPEL VALUES(%s,%s)",
+            "INSERT INTO KOPPEL_PATHWAY VALUES(%s,%s)",
             (line[0], line[1]))
 
     """
