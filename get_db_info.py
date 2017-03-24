@@ -15,6 +15,11 @@ JGI_ORGS_NAMES = {">asp-ni" : "Aspergillus niger",
                   ">pen-bi" : "Penicillium bilaiae",
                   ">pen-br" : "Penicillium brevicompactum",
                   ">pha-ch" : "Phanerochaete chrysosporium",
+                  "asp-ni" : "Aspergillus niger",
+                  "het-py" : "Heterogastridium pycnidioideum",
+                  "pen-bi" : "Penicillium bilaiae",
+                  "pen-br" : "Penicillium brevicompactum",
+                  "pha-ch" : "Phanerochaete chrysosporium",
                   "asp-cl" : "Aspergillus clavatus",
                   "eme-ni" : "Aspergillus nidulans",
                   "mag-gr" : "Magnaporthe grisea",
@@ -123,7 +128,8 @@ def download_JGI_proteome(org):
         return ("http://genome.jgi.doe.gov" + path)
 
 def get_pathway(orgs, proteomes):
-    global JGI_ORGS
+    global JGI_ORGS, JGI_ORGS_NAMES
+    eiwiten = [x.split(";")[0:2] for x in open("db_eiwit", "r").readlines()]
     pathway_info = []
     pathway_koppel = []
     os.system("curl http://rest.kegg.jp/list/pathway -b cookies > $(pwd)/pathway_ids")
@@ -164,7 +170,7 @@ def get_pathway(orgs, proteomes):
                         found = False
                         for x in pathway_ids:
                             if pathway_name == x[1]:
-                                pathway_koppel.append([prot, x[0]])
+                                pathway_koppel.append([prot, JGI_ORGS_NAMES[org], x[0]])
                                 pathway_info.append(x)
         else:
             uniprot_up = proteomes[org].split("proteome:")[1].split("&")[0]
@@ -175,8 +181,8 @@ def get_pathway(orgs, proteomes):
             pathway_file = [[x.split("\t")[0]] + x[:-1].split("\t")[1].split(";") for x in open("{}_pathway.tab".format(org), "r").readlines() if len(x[:-1].split(" ")) > 2]
             for x in pathway_file:
                 for y in pathway_ids:
-                    if x[1] == y[1]:
-                        pathway_koppel.append([x[0], y[0]])
+                    if x[1] == y[1] and [x[0], JGI_ORGS_NAMES[org]] in eiwiten:
+                        pathway_koppel.append([x[0], JGI_ORGS_NAMES[org], y[0]])
                         pathway_info.append(y)
 
 
@@ -193,58 +199,78 @@ def get_pathway(orgs, proteomes):
 
 def get_eiwit(orgs):
     global JGI_ORGS_NAMES
-    cogs = [x[:-1].split("\t") for x in open("cogs.txt", "r").readlines()]
+    #cogs = [x[:-1].split("\t") for x in open("cogs.txt", "r").readlines()]
+    cogs_temp = [x[:-1].split("\t")[1] for x in open("cogs.txt", "r").readlines()]
+    cogs = {}
+    for x in cogs_temp:
+        cogs[x[1]] = x[0]
     db_eiwit = []
     used_ids = []
     for org in orgs:
         print(org)
         found, cog, database, prot_id = False, "", "", ""
         if org[0] == ">":
-            prot = [x[:-1] for x in open("prots/{}.fa".format(org[1:]), "r") if x[0] == ">"]
+            #prot = [x[:-1] for x in open("prots/{}.fa".format(org[1:]), "r") if x[0] == ">"]
+            prot_file = open("prots/{}.fa".format(org[1:]), "r")
             database = "JGI"
         else:
-            prot = [x[:-1] for x in open("prots/{}.fa".format(org), "r") if x[0] == ">"]
+            #prot = [x[:-1] for x in open("prots/{}.fa".format(org), "r") if x[0] == ">"]
+            prot_file = open("prots/{}.fa".format(org), "r")
             database = "UNIPROT"
+        prot = [x[:-1] for x in prot_file.readlines() if x not in ["", "\n"]]
+        prot_current = prot.pop(0)
+        prot_sequence = ""
         for x in prot:
-            for y in cogs:
-                if y[1] in x:
-                    found = True
-                    cog = y[0]
-            if not found:
-                cog = "NULL"
-            found = False
-            if org[0] == ">":
-                prot_id = x.split("|")[2]
+            if x[0] == ">" and prot_sequence != "":
+                cog = cogs[prot_current] if prot_current in cogs else "NULL"
+                if org[0] == ">":
+                    prot_id = prot_current.split("|")[2]
+                else:
+                    prot_id = prot_current.split("|")[1]
+                prot_list = [prot_id, JGI_ORGS_NAMES[org], database, cog, prot_sequence]
+                db_eiwit.append(prot_list)
+                used_ids.append(prot_list)
+                prot_current = x
+                prot_sequence = ""
             else:
-                prot_id = x.split("|")[1]
-            if prot_id not in used_ids:
-                db_eiwit.append([prot_id, database, JGI_ORGS_NAMES[org], cog])
-                used_ids.append(prot_id)
+                prot_sequence += x
+        cog = cogs[prot_current] if prot_current in cogs else "NULL"
+        if org[0] == ">":
+            prot_id = prot_current.split("|")[2]
+        else:
+            prot_id = prot_current.split("|")[1]
+        prot_list = [prot_id, JGI_ORGS_NAMES[org], database, cog, prot_sequence]
+        db_eiwit.append(prot_list)
+        used_ids.append(prot_list)
+
+
+
 
     db_eiwit_file = open("db_eiwit", "w")
     for x in db_eiwit:
         db_eiwit_file.write(";".join(x) + "\n")
 
 def get_blasts(orgs):
-    global SEPARATOR
+    global SEPARATOR, JGI_ORGS_NAMES
     db_blast = []
     for org1 in orgs:
         for org2 in orgs:
             if org1 != org2:
                 blasts = [x[:-1] for x in open("blasts/{}{}{}".format(org1, SEPARATOR, org2), "r").readlines()]
-                temp_blast = []
                 for blast in blasts:
+                    temp_blast = []
                     blast = blast.split("\t")
                     if blast[0].split("|")[0] == "jgi":
                         temp_blast.append(blast[0].split("|")[2])
                     else:
                         temp_blast.append(blast[0].split("|")[1])
+                    temp_blast.append(JGI_ORGS_NAMES[org2])
                     if blast[1].split("|")[0] == "jgi":
                         temp_blast.append(blast[1].split("|")[2])
                     else:
                         temp_blast.append(blast[1].split("|")[1])
+                    temp_blast.append(JGI_ORGS_NAMES[org1])
                     db_blast.append(temp_blast)
-                    temp_blast = []
     db_blast_file = open("db_blast", "w")
     db_blast = list(map(list, set(map(tuple, db_blast))))
     for x in db_blast:
@@ -260,9 +286,9 @@ def main():
         else:
             clean_orgs.append(x)
     if check_files(clean_orgs):
+        get_eiwit(orgs)
         #get_pathway(orgs, proteomes)
-        #get_eiwit(orgs)
-        get_blasts(clean_orgs)
+        #get_blasts(clean_orgs)
 
 
 main()

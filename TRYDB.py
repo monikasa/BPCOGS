@@ -39,19 +39,20 @@ def drop_db(cursor, conn):
 def make_tables(cursor, conn):
 
     cursor.execute(
-        "CREATE TABLE EIWIT (Eiwit_id VARCHAR (100)"
-        "NOT NULL, Database VARCHAR (100) NOT NULL, Organisme VARCHAR (100), COG_id VARCHAR (100), "
-        "CONSTRAINT pk_eiwit PRIMARY KEY (Eiwit_id))") # Wat is COG_id? Komt het ergens uit of is het gewoon index nr? Het staat als FK in erd waarvoor?
+        "CREATE TABLE EIWIT (Eiwit_id VARCHAR (100) NOT NULL,"
+        "ORG VARCHAR(100) NOT NULL, Database VARCHAR (100) NOT NULL, COG_id VARCHAR (100), Sequetie VARCHAR (10000) NOT NULL,"
+        "CONSTRAINT pk_eiwit PRIMARY KEY (Eiwit_id, ORG))") # Wat is COG_id? Komt het ergens uit of is het gewoon index nr? Het staat als FK in erd waarvoor?
     #cursor.execute(
         #"CREATE TABLE ORGANISME (Organisme_id VARCHAR (100), "
 	#"Beschrijving VARCHAR (100000), CONSTRAINT pk_organisme " 		"PRIMARY KEY (Organisme_id))")
 
     cursor.execute(
         "CREATE TABLE BLAST (Eiwit_id_1 VARCHAR (100),"
-        "Eiwit_id_2 VARCHAR (100), "
-	    "CONSTRAINT pk_blast PRIMARY KEY (Eiwit_id_1, Eiwit_id_2),"
-	    "CONSTRAINT fk_1_blast FOREIGN KEY (Eiwit_id_1) REFERENCES EIWIT(Eiwit_id),"
-	    "CONSTRAINT fk_2_blast FOREIGN KEY (Eiwit_id_2) REFERENCES EIWIT(Eiwit_id))")
+        " ORG_1 VARCHAR (100), Eiwit_id_2 VARCHAR (100),"
+        "ORG_2 VARCHAR (100),"
+	    "CONSTRAINT pk_blast PRIMARY KEY (Eiwit_id_1, ORG_1, Eiwit_id_2, ORG_2),"
+	    "CONSTRAINT fk_1_blast FOREIGN KEY (Eiwit_id_1, ORG_1) REFERENCES EIWIT(Eiwit_id, ORG),"
+	    "CONSTRAINT fk_2_blast FOREIGN KEY (Eiwit_id_2, ORG_2) REFERENCES EIWIT(Eiwit_id, ORG))")
     cursor.execute(
         "CREATE TABLE PATHWAY (Pathway_id VARCHAR (100),"
 	    "Beschrijving VARCHAR (10000),"
@@ -59,9 +60,9 @@ def make_tables(cursor, conn):
    
     cursor.execute(
         "CREATE TABLE KOPPEL_PATHWAY (Eiwit_id VARCHAR (100), "
-        "Pathway_id VARCHAR (100),"
-        "CONSTRAINT pk_koppel PRIMARY KEY (Eiwit_id, Pathway_id),"
-        "CONSTRAINT fk_eiw_koppel FOREIGN KEY (Eiwit_id) REFERENCES EIWIT (Eiwit_id),"
+        "ORG VARCHAR (100), Pathway_id VARCHAR (100),"
+        "CONSTRAINT pk_koppel PRIMARY KEY (Eiwit_id, ORG, Pathway_id),"
+        "CONSTRAINT fk_eiw_koppel FOREIGN KEY (Eiwit_id, ORG) REFERENCES EIWIT (Eiwit_id, ORG),"
         "CONSTRAINT fk_path_koppel FOREIGN KEY(Pathway_id) REFERENCES PATHWAY (Pathway_id)) ")
 
    
@@ -77,13 +78,13 @@ def fill_tables(cursor, conn):
 
     for line in db_eiwit:
         cursor.execute(
-            "INSERT INTO EIWIT VALUES(%s,%s,%s,%s)",
-            (line[0], line[1], line[2], (line[3]) if line[3] != "NULL" else None))
+            "INSERT INTO EIWIT VALUES(%s,%s,%s,%s,%s)",
+            (line[0], line[1], line[2], (line[3]) if line[3] != "NULL" else None, line[4]))
 
     for line in db_blast:
         cursor.execute(
-            "INSERT INTO BLAST VALUES(%s,%s)",
-            (line[0], line[1]))
+            "INSERT INTO BLAST VALUES(%s,%s,%s,%s)",
+            (line[0], line[1], line[2], line[3]))
 
     for line in db_pathway:
         cursor.execute(
@@ -92,8 +93,8 @@ def fill_tables(cursor, conn):
 
     for line in db_pathway_koppel:
         cursor.execute(
-            "INSERT INTO KOPPEL_PATHWAY VALUES(%s,%s)",
-            (line[0], line[1]))
+            "INSERT INTO KOPPEL_PATHWAY VALUES(%s,%s,%s)",
+            (line[0], line[1], line[2]))
 
     """
     cursor.execute(
