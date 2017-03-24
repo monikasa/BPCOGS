@@ -200,10 +200,12 @@ def get_pathway(orgs, proteomes):
 def get_eiwit(orgs):
     global JGI_ORGS_NAMES
     #cogs = [x[:-1].split("\t") for x in open("cogs.txt", "r").readlines()]
-    cogs_temp = [x[:-1].split("\t")[1] for x in open("cogs.txt", "r").readlines()]
+    cogs_temp = [x[:-1].split("\t") for x in open("cogs.txt", "r").readlines()]
     cogs = {}
     for x in cogs_temp:
-        cogs[x[1]] = x[0]
+        cogs[x[1].split("|")[2] if x[1].split("|")[1] == "jgi" else x[1].split("|")[1]] = x[0]
+
+    print(cogs)
     db_eiwit = []
     used_ids = []
     for org in orgs:
@@ -222,11 +224,11 @@ def get_eiwit(orgs):
         prot_sequence = ""
         for x in prot:
             if x[0] == ">" and prot_sequence != "":
-                cog = cogs[prot_current] if prot_current in cogs else "NULL"
                 if org[0] == ">":
                     prot_id = prot_current.split("|")[2]
                 else:
                     prot_id = prot_current.split("|")[1]
+                cog = cogs[prot_id] if prot_id in cogs else "NULL"
                 prot_list = [prot_id, JGI_ORGS_NAMES[org], database, cog, prot_sequence]
                 db_eiwit.append(prot_list)
                 used_ids.append(prot_list)
@@ -234,7 +236,7 @@ def get_eiwit(orgs):
                 prot_sequence = ""
             else:
                 prot_sequence += x
-        cog = cogs[prot_current] if prot_current in cogs else "NULL"
+        cog = cogs[prot_id] if prot_id in cogs else "NULL"
         if org[0] == ">":
             prot_id = prot_current.split("|")[2]
         else:
