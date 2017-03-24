@@ -128,6 +128,7 @@ def download_JGI_proteome(org):
         return ("http://genome.jgi.doe.gov" + path)
 
 def get_pathway(orgs, proteomes):
+    print("pathway tabellen aan het maken...")
     global JGI_ORGS, JGI_ORGS_NAMES
     eiwiten = [x.split(";")[0:2] for x in open("db_eiwit", "r").readlines()]
     pathway_info = []
@@ -144,7 +145,7 @@ def get_pathway(orgs, proteomes):
             file = open("files.xml", "r")
             directory = file.readlines()
             possible_files = []
-            print(jgi_url)
+            #print(jgi_url)
             for dir_file in directory:
                 #print(">{}".format(dir_file))
                 if "KEGG" in dir_file and "tab" in dir_file:
@@ -158,7 +159,7 @@ def get_pathway(orgs, proteomes):
                     print(x)
             path = possible_files[0].split("url=\"")[1].split("\"")[0]
             url = "http://genome.jgi.doe.gov" + path
-            os.system("curl {} -b cookies > $(pwd)/{}_pathway.tab.gz".format(url, org[1:]))
+            os.system("curl {} -q -b cookies > $(pwd)/{}_pathway.tab.gz".format(url, org[1:]))
             os.system("gunzip -q -f {}_pathway.tab.gz".format(org[1:]))
             pathway_file = open("{}_pathway.tab".format(org[1:]), "r").readlines()
             pathway_header = pathway_file.pop(0).split("\t")
@@ -198,12 +199,13 @@ def get_pathway(orgs, proteomes):
         pathway_info_file.write(";".join(x) + "\n")
 
 def get_eiwit(orgs):
+    print("eiwit tabel aan het maken...")
     global JGI_ORGS_NAMES
     #cogs = [x[:-1].split("\t") for x in open("cogs.txt", "r").readlines()]
     cogs_temp = [x[:-1].split("\t") for x in open("cogs.txt", "r").readlines()]
     cogs = {}
     for x in cogs_temp:
-        cogs[x[1].split("|")[2] if x[1].split("|")[1] == "jgi" else x[1].split("|")[1]] = x[0]
+        cogs[x[1].split("|")[2] if x[1].split("|")[0] == "jgi" else x[1].split("|")[1]] = x[0]
 
     print(cogs)
     db_eiwit = []
@@ -253,6 +255,7 @@ def get_eiwit(orgs):
         db_eiwit_file.write(";".join(x) + "\n")
 
 def get_blasts(orgs):
+    print("blast tabel aan het maken...")
     global SEPARATOR, JGI_ORGS_NAMES
     db_blast = []
     for org1 in orgs:
@@ -289,8 +292,8 @@ def main():
             clean_orgs.append(x)
     if check_files(clean_orgs):
         get_eiwit(orgs)
-        #get_pathway(orgs, proteomes)
-        #get_blasts(clean_orgs)
+        get_pathway(orgs, proteomes)
+        get_blasts(clean_orgs)
 
 
 main()
