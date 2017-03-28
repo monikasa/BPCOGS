@@ -274,6 +274,18 @@ def get_blasts(orgs):
         line = ";".join(x) + "\n"
         db_blast_file.write(line)
 
+def remove_file(filename):
+    if os.path.isfile(filename):
+        os.system("rm {}".format(filename))
+
+def clean_files(orgs):
+    print("onnodige files verwijderen...")
+    files = ["pathway_ids", "cookies", "files.xml", "test"]
+    for file in files:
+        remove_file(file)
+    for org in orgs:
+        remove_file("{}_pathway.tab".format(org))
+
 def main():
     proteomes, orgs = get_proteomes()
     clean_orgs = []
@@ -286,6 +298,9 @@ def main():
         get_eiwit(orgs)
         get_pathway(orgs, proteomes)
         get_blasts(clean_orgs)
+        clean_files(clean_orgs)
+        print("database files gemaakt!")
+
 
 
 main()
